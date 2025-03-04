@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecurePass Generator</title>
+    <style>
+        /* Estilos generales */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+            color: #1e3a8a;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem;
+            background-color: #2563eb;
+            color: white;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+
+        header p {
+            margin: 0.5rem 0 0;
+            font-size: 1.1rem;
+        }
+
+        main {
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        section {
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #1e40af;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .options label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .result input {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .result button {
+            padding: 0.5rem 1rem;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .result button:hover {
+            background-color: #1e40af;
+        }
+
+        .strength-meter {
+            width: 100%;
+            height: 10px;
+            background-color: #e2e8f0;
+            border-radius: 5px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .strength-bar {
+            height: 100%;
+            width: 0;
+            background-color: red;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        #suggestions {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #suggestions li {
+            margin: 0.5rem 0;
+            color: #dc2626;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: #2563eb;
+            color: white;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SecurePass Generator</h1>
+        <p>Genera y evalúa contraseñas seguras para proteger tus cuentas en internet.</p>
+    </header>
+
+    <main>
+        <!-- Generador de contraseñas -->
+        <section class="password-generator">
+            <h2>Generador de Contraseñas</h2>
+            <div class="options">
+                <label for="length">Longitud: <span id="length-value">12</span></label>
+                <input type="range" id="length" min="8" max="64" value="12">
+                <label><input type="checkbox" id="uppercase" checked> Mayúsculas (A-Z)</label>
+                <label><input type="checkbox" id="lowercase" checked> Minúsculas (a-z)</label>
+                <label><input type="checkbox" id="numbers" checked> Números (0-9)</label>
+                <label><input type="checkbox" id="symbols" checked> Símbolos (!@#$%^&*)</label>
+            </div>
+            <button id="generate">Generar Contraseña</button>
+            <div class="result">
+                <input type="text" id="password" readonly>
+                <button id="copy">Copiar</button>
+            </div>
+        </section>
+
+        <!-- Evaluador de contraseñas -->
+        <section class="password-strength">
+            <h2>Evaluador de Fortaleza</h2>
+            <input type="text" id="input-password" placeholder="Ingresa una contraseña">
+            <div class="strength-meter">
+                <div class="strength-bar"></div>
+            </div>
+            <p id="strength-text">Fortaleza: </p>
+            <ul id="suggestions"></ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>Hecho con ❤️ por IA</p>
+    </footer>
+
+    <script>
+        // Elementos del DOM
+        const lengthInput = document.getElementById('length');
+        const lengthValue = document.getElementById('length-value');
+        const uppercaseInput = document.getElementById('uppercase');
+        const lowercaseInput = document.getElementById('lowercase');
+        const numbersInput = document.getElementById('numbers');
+        const symbolsInput = document.getElementById('symbols');
+        const generateButton = document.getElementById('generate');
+        const passwordInput = document.getElementById('password');
+        const copyButton = document.getElementById('copy');
+        const inputPassword = document.getElementById('input-password');
+        const strengthBar = document.querySelector('.strength-bar');
+        const strengthText = document.getElementById('strength-text');
+        const suggestionsList = document.getElementById('suggestions');
+
+        // Actualizar valor de longitud
+        lengthInput.addEventListener('input', () => {
+            lengthValue.textContent = lengthInput.value;
+        });
+
+        // Generar contraseña
+        generateButton.addEventListener('click', () => {
+            const length = lengthInput.value;
+            const uppercase = uppercaseInput.checked;
+            const lowercase = lowercaseInput.checked;
+            const numbers = numbersInput.checked;
+            const symbols = symbolsInput.checked;
+
+            passwordInput.value = generatePassword(length, uppercase, lowercase, numbers, symbols);
+        });
+
+        // Copiar contraseña
+        copyButton.addEventListener('click', () => {
+            passwordInput.select();
+            document.execCommand('copy');
+            alert('Contraseña copiada al portapapeles');
+        });
+
+        // Evaluar fortaleza de contraseña
+        inputPassword.addEventListener('input', () => {
+            const password = inputPassword.value;
+            const strength = checkPasswordStrength(password);
+            updateStrengthBar(strength);
+            showSuggestions(password);
+        });
+
+        // Funciones
+        function generatePassword(length, uppercase, lowercase, numbers, symbols) {
+            let charset = '';
+            if (uppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            if (lowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
+            if (numbers) charset += '0123456789';
+            if (symbols) charset += '!@#$%^&*()';
+
+            let password = '';
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return password;
+        }
+
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            if (password.length >= 8) strength += 1;
+            if (password.length >= 12) strength += 1;
+            if (/[A-Z]/.test(password)) strength += 1;
+            if (/[a-z]/.test(password)) strength += 1;
+            if (/[0-9]/.test(password)) strength += 1;
+            if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+            return strength;
+        }
+
+        function updateStrengthBar(strength) {
+            const width = (strength / 6) * 100;
+            strengthBar.style.width = `${width}%`;
+            strengthBar.style.backgroundColor = width < 50 ? 'red' : width < 80 ? 'orange' : 'green';
+            strengthText.textContent = `Fortaleza: ${width < 50 ? 'Débil' : width < 80 ? 'Media' : 'Fuerte'}`;
+        }
+
+        function showSuggestions(password) {
+            suggestionsList.innerHTML = '';
+            if (password.length < 8) {
+                suggestionsList.innerHTML += '<li>Usa al menos 8 caracteres.</li>';
+            }
+            if (!/[A-Z]/.test(password)) {
+                suggestionsList.innerHTML += '<li>Añade mayúsculas.</li>';
+            }
+            if (!/[0-9]/.test(password)) {
+                suggestionsList.innerHTML += '<li>Añade números.</li>';
+            }
+            if (!/[^A-Za-z0-9]/.test(password)) {
+                suggestionsList.innerHTML += '<li>Añade símbolos especiales.</li>';
+            }
+        }
+    </script>
+</body>
+</html>
